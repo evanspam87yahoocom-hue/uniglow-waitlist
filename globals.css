@@ -1,0 +1,161 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: "Instrument Serif", serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: #FFFBF7;
+  color: #49443D;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom selection color */
+::selection {
+  background-color: rgba(255, 107, 74, 0.2);
+  color: #7A2B19;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5F3F0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D5CFC7;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #B8AFA3;
+}
+
+/* Form input focus states */
+.form-input {
+  @apply w-full px-4 py-3 rounded-xl border-2 border-warmgray-200 bg-white/80 backdrop-blur-sm transition-all duration-300 ease-out;
+  @apply focus:outline-none focus:border-glow-400 focus:ring-4 focus:ring-glow-100;
+  @apply placeholder:text-warmgray-400;
+}
+
+.form-input:hover:not(:focus) {
+  @apply border-warmgray-300;
+}
+
+/* Multi-select checkbox styles */
+.checkbox-item {
+  @apply relative flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-warmgray-200 bg-white/60 cursor-pointer transition-all duration-200;
+  @apply hover:border-warmgray-300 hover:bg-white/80;
+}
+
+.checkbox-item.selected {
+  @apply border-glow-400 bg-glow-50/80;
+}
+
+.checkbox-item input[type="checkbox"] {
+  @apply sr-only;
+}
+
+.checkbox-indicator {
+  @apply w-5 h-5 rounded-md border-2 border-warmgray-300 flex items-center justify-center transition-all duration-200;
+}
+
+.checkbox-item.selected .checkbox-indicator {
+  @apply bg-glow-500 border-glow-500;
+}
+
+/* Radio button styles */
+.radio-item {
+  @apply relative flex items-center gap-3 px-5 py-4 rounded-xl border-2 border-warmgray-200 bg-white/60 cursor-pointer transition-all duration-200;
+  @apply hover:border-warmgray-300 hover:bg-white/80;
+}
+
+.radio-item.selected {
+  @apply border-glow-400 bg-glow-50/80;
+}
+
+.radio-item input[type="radio"] {
+  @apply sr-only;
+}
+
+.radio-indicator {
+  @apply w-5 h-5 rounded-full border-2 border-warmgray-300 flex items-center justify-center transition-all duration-200;
+}
+
+.radio-item.selected .radio-indicator {
+  @apply border-glow-500;
+}
+
+.radio-item.selected .radio-indicator::after {
+  content: "";
+  @apply w-2.5 h-2.5 rounded-full bg-glow-500;
+}
+
+/* Type selection buttons */
+.type-button {
+  @apply relative flex-1 px-6 py-5 rounded-2xl border-2 border-warmgray-200 bg-white/70 backdrop-blur-sm cursor-pointer transition-all duration-300 ease-out;
+  @apply hover:border-glow-300 hover:bg-white hover:shadow-lg hover:shadow-glow-100/50;
+}
+
+.type-button.selected {
+  @apply border-glow-500 bg-gradient-to-br from-glow-50 to-coral-50 shadow-xl shadow-glow-200/30;
+}
+
+/* Submit button */
+.submit-button {
+  @apply relative w-full py-4 px-8 rounded-2xl font-semibold text-white text-lg overflow-hidden transition-all duration-300 ease-out;
+  @apply bg-gradient-to-r from-glow-500 via-coral-500 to-glow-500 bg-[length:200%_100%];
+  @apply hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-glow-300/40;
+  @apply focus:outline-none focus:ring-4 focus:ring-glow-200;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none;
+}
+
+.submit-button:not(:disabled):active {
+  @apply scale-[0.98];
+}
+
+/* Error message styling */
+.error-message {
+  @apply text-sm text-coral-600 mt-1.5 flex items-center gap-1.5;
+}
+
+/* Animated background blobs */
+.blob {
+  @apply absolute rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse;
+}
+
+/* Stagger animation delays */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+.stagger-6 { animation-delay: 0.6s; }
+
+/* Grain texture overlay */
+.grain-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.03;
+  z-index: 1000;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
