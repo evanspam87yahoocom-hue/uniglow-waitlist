@@ -2,21 +2,22 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "UniGlow | Student Beauty Marketplace Waitlist",
+  title: "UniGlow | Beauty by Students, for Students",
   description:
-    "Join the waitlist for UniGlow - the student-to-student beauty platform connecting college students to trusted student providers for affordable services like hair, nails, lashes, and makeup.",
+    "Join the UniGlow waitlist - the student-to-student beauty platform connecting college students with trusted student providers for affordable beauty services.",
   keywords: [
     "student beauty",
     "college beauty services",
     "affordable hair",
-    "student nails",
+    "student providers",
     "campus beauty",
-    "student makeup artist",
+    "student makeup",
+    "student nails",
   ],
   openGraph: {
-    title: "UniGlow | Student Beauty Marketplace",
+    title: "UniGlow | Beauty by Students, for Students",
     description:
-      "Connecting college students to trusted student beauty providers. Hair, nails, lashes, makeup - all on campus.",
+      "Connecting college students with trusted student beauty providers. Hair, nails, lashes, makeup - all on campus.",
     type: "website",
   },
 };

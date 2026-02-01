@@ -1,1015 +1,264 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Suspense, useEffect, useState } from "react";
 
-type UserType = "booker" | "provider" | null;
-
-interface FormErrors {
-  email?: string;
-  school?: string;
-  services?: string;
-  budget?: string;
-  frequency?: string;
-  timeline?: string;
-  experience?: string;
-  availability?: string;
-  backgroundCheck?: string;
-  startDate?: string;
+// Pomegranate Logo Component
+function PomegranateLogo({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 48 48"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <path
+        d="M24 4C14 4 8 14 8 24C8 34 14 44 24 44C34 44 40 34 40 24C40 14 34 4 24 4Z"
+        fill="url(#pomGradient)"
+      />
+      <path
+        d="M24 4C24 4 22 2 20 2C18 2 17 3 17 4C17 5 18 6 20 6C21 6 22 5 22 5L24 4L26 5C26 5 27 6 28 6C30 6 31 5 31 4C31 3 30 2 28 2C26 2 24 4 24 4Z"
+        fill="#6B1023"
+      />
+      <circle cx="18" cy="20" r="3" fill="#FEE2E2" fillOpacity="0.8" />
+      <circle cx="24" cy="16" r="2.5" fill="#FEE2E2" fillOpacity="0.7" />
+      <circle cx="30" cy="20" r="3" fill="#FEE2E2" fillOpacity="0.8" />
+      <circle cx="16" cy="28" r="2.5" fill="#FEE2E2" fillOpacity="0.6" />
+      <circle cx="24" cy="26" r="3.5" fill="#FEE2E2" fillOpacity="0.9" />
+      <circle cx="32" cy="28" r="2.5" fill="#FEE2E2" fillOpacity="0.6" />
+      <circle cx="20" cy="34" r="2" fill="#FEE2E2" fillOpacity="0.5" />
+      <circle cx="28" cy="34" r="2" fill="#FEE2E2" fillOpacity="0.5" />
+      <ellipse cx="16" cy="14" rx="4" ry="3" fill="white" fillOpacity="0.2" />
+      <defs>
+        <linearGradient id="pomGradient" x1="8" y1="4" x2="40" y2="44" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#C41E3A" />
+          <stop offset="0.5" stopColor="#A31831" />
+          <stop offset="1" stopColor="#831328" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
 }
 
-const SERVICES = [
-  { id: "hair", label: "Hair Styling & Braiding", emoji: "💇‍♀️" },
-  { id: "nails", label: "Nails & Manicures", emoji: "💅" },
-  { id: "lashes", label: "Lashes & Brows", emoji: "👁️" },
-  { id: "makeup", label: "Makeup & Glam", emoji: "💄" },
-  { id: "skincare", label: "Skincare & Facials", emoji: "✨" },
-  { id: "waxing", label: "Waxing & Hair Removal", emoji: "🌸" },
-];
-
-const BUDGET_OPTIONS = [
-  { id: "under25", label: "Under $25" },
-  { id: "25to50", label: "$25 - $50" },
-  { id: "50to100", label: "$50 - $100" },
-  { id: "over100", label: "$100+" },
-];
-
-const FREQUENCY_OPTIONS = [
-  { id: "weekly", label: "Weekly" },
-  { id: "2to3monthly", label: "2-3x per month" },
-  { id: "monthly", label: "Once a month" },
-  { id: "occasionally", label: "Occasionally" },
-];
-
-const TIMELINE_OPTIONS = [
-  { id: "asap", label: "ASAP - I need this now! 🔥" },
-  { id: "semester", label: "This semester" },
-  { id: "nextsemester", label: "Next semester" },
-  { id: "justcurious", label: "Just curious for now" },
-];
-
-const EXPERIENCE_OPTIONS = [
-  { id: "beginner", label: "Beginner - Just starting out" },
-  { id: "intermediate", label: "Intermediate - Some experience" },
-  { id: "advanced", label: "Advanced - Very experienced" },
-  { id: "licensed", label: "Licensed Professional" },
-];
-
-const AVAILABILITY_OPTIONS = [
-  { id: "weekday_morning", label: "Weekday Mornings" },
-  { id: "weekday_afternoon", label: "Weekday Afternoons" },
-  { id: "weekday_evening", label: "Weekday Evenings" },
-  { id: "weekend_morning", label: "Weekend Mornings" },
-  { id: "weekend_afternoon", label: "Weekend Afternoons" },
-  { id: "weekend_evening", label: "Weekend Evenings" },
-];
-
-const START_OPTIONS = [
-  { id: "asap", label: "ASAP - Ready to go! 🚀" },
-  { id: "2weeks", label: "Within 2 weeks" },
-  { id: "month", label: "Within a month" },
-  { id: "exploring", label: "Just exploring" },
-];
-
-export default function WaitlistPage() {
-  const router = useRouter();
-  const [userType, setUserType] = useState<UserType>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+function ThankYouContent() {
+  const searchParams = useSearchParams();
+  const type = searchParams.get("type");
+  const tier = searchParams.get("tier");
   const [mounted, setMounted] = useState(false);
-  const [errors, setErrors] = useState<FormErrors>({});
-
-  // Common fields
-  const [email, setEmail] = useState("");
-  const [school, setSchool] = useState("");
-
-  // Booker fields
-  const [servicesWanted, setServicesWanted] = useState<string[]>([]);
-  const [budget, setBudget] = useState("");
-  const [frequency, setFrequency] = useState("");
-  const [timeline, setTimeline] = useState("");
-
-  // Provider fields
-  const [servicesOffered, setServicesOffered] = useState<string[]>([]);
-  const [experience, setExperience] = useState("");
-  const [portfolioLink, setPortfolioLink] = useState("");
-  const [availability, setAvailability] = useState<string[]>([]);
-  const [backgroundCheck, setBackgroundCheck] = useState<string>("");
-  const [startDate, setStartDate] = useState("");
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const validateEmail = (email: string) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
-
-    if (!email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!validateEmail(email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
-
-    if (!school.trim()) {
-      newErrors.school = "School name is required";
-    }
-
-    if (userType === "booker") {
-      if (servicesWanted.length === 0) {
-        newErrors.services = "Please select at least one service";
-      }
-      if (!budget) {
-        newErrors.budget = "Please select a budget range";
-      }
-      if (!frequency) {
-        newErrors.frequency = "Please select how often you'd book";
-      }
-      if (!timeline) {
-        newErrors.timeline = "Please let us know when you want UniGlow";
-      }
-    }
-
-    if (userType === "provider") {
-      if (servicesOffered.length === 0) {
-        newErrors.services = "Please select at least one service you offer";
-      }
-      if (!experience) {
-        newErrors.experience = "Please select your experience level";
-      }
-      if (availability.length === 0) {
-        newErrors.availability = "Please select your availability";
-      }
-      if (!backgroundCheck) {
-        newErrors.backgroundCheck =
-          "Please indicate background check willingness";
-      }
-      if (!startDate) {
-        newErrors.startDate = "Please let us know when you can start";
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    const payload =
-      userType === "booker"
-        ? {
-            type: "booker",
-            email,
-            school,
-            services_wanted: servicesWanted,
-            budget,
-            frequency,
-            timeline,
-          }
-        : {
-            type: "provider",
-            email,
-            school,
-            services_offered: servicesOffered,
-            experience,
-            portfolio_link: portfolioLink || null,
-            availability,
-            background_check: backgroundCheck,
-            start_date: startDate,
-          };
-
-    try {
-      const res = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        router.push(`/thanks?type=${userType}`);
-      } else {
-        const data = await res.json();
-        alert(data.error || "Something went wrong. Please try again.");
-      }
-    } catch (err) {
-      alert("Network error. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const toggleService = (
-    serviceId: string,
-    type: "wanted" | "offered"
-  ) => {
-    if (type === "wanted") {
-      setServicesWanted((prev) =>
-        prev.includes(serviceId)
-          ? prev.filter((s) => s !== serviceId)
-          : [...prev, serviceId]
-      );
-    } else {
-      setServicesOffered((prev) =>
-        prev.includes(serviceId)
-          ? prev.filter((s) => s !== serviceId)
-          : [...prev, serviceId]
-      );
-    }
-    if (errors.services) {
-      setErrors((prev) => ({ ...prev, services: undefined }));
-    }
-  };
-
-  const toggleAvailability = (slot: string) => {
-    setAvailability((prev) =>
-      prev.includes(slot)
-        ? prev.filter((s) => s !== slot)
-        : [...prev, slot]
-    );
-    if (errors.availability) {
-      setErrors((prev) => ({ ...prev, availability: undefined }));
-    }
-  };
-
   if (!mounted) return null;
 
+  const isBooker = type === "booker";
+  const isProvider = type === "provider";
+  const isBeautySchool = tier === "beauty-school";
+  const isIndependent = tier === "independent";
+
   return (
-    <main className="relative min-h-screen overflow-hidden">
+    <main className="relative min-h-screen flex items-center justify-center">
       {/* Background decoration */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="blob w-[600px] h-[600px] bg-glow-200 -top-48 -left-48" />
-        <div className="blob w-[500px] h-[500px] bg-lavender-200 top-1/4 -right-32" />
-        <div className="blob w-[400px] h-[400px] bg-coral-200 bottom-0 left-1/4" />
+        <div className="pomegranate-blob w-[700px] h-[700px] bg-blush-200/50 -top-64 -left-64 animate-pulse" />
+        <div className="pomegranate-blob w-[500px] h-[500px] bg-pomegranate-200/30 top-1/3 -right-48 animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="pomegranate-blob w-[400px] h-[400px] bg-tan-200/40 bottom-0 left-1/4 animate-pulse" style={{ animationDelay: "2s" }} />
       </div>
 
-      <div className="relative z-10 max-w-2xl mx-auto px-6 py-12 md:py-20">
-        {/* Header Section */}
-        <header className="text-center mb-12 animate-fade-up">
-          <h1 className="font-display text-5xl md:text-6xl text-warmgray-900 mb-3 tracking-tight">
-            <span className="bg-gradient-to-r from-glow-600 via-coral-500 to-lavender-500 bg-clip-text text-transparent">
-              UniGlow
-            </span>
+      <div className="relative z-10 max-w-xl mx-auto px-6 py-12 text-center">
+        {/* Success Icon */}
+        <div className="mb-8 animate-scale-in">
+          <div className="w-24 h-24 mx-auto bg-gradient-to-br from-pomegranate-400 to-pomegranate-600 rounded-full flex items-center justify-center shadow-soft-xl">
+            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="animate-fade-up stagger-1 opacity-0">
+          <h1 className="font-display text-4xl md:text-5xl text-pomegranate-900 mb-4">
+            You're on the list!
           </h1>
-          <p className="font-display text-xl md:text-2xl text-warmgray-600 italic mb-6">
-            Beauty by students, for students.
-          </p>
-          <p className="text-warmgray-600 text-lg leading-relaxed max-w-xl mx-auto">
-            UniGlow is a student-to-student beauty platform connecting college
-            students to trusted student providers for affordable services like
-            hair, nails, lashes, and makeup.{" "}
-            <span className="font-semibold text-glow-600">
-              Built for campus communities.
-            </span>
-          </p>
-        </header>
 
-        {/* Form Section */}
-        <section className="animate-fade-up stagger-2 opacity-0">
-          <div className="bg-white/60 backdrop-blur-xl rounded-3xl p-8 md:p-10 shadow-xl shadow-warmgray-200/30 border border-white/50">
-            <h2 className="font-display text-2xl md:text-3xl text-warmgray-800 text-center mb-8">
-              Join the Waitlist
-            </h2>
-
-            {/* User Type Selection */}
-            <div className="mb-8">
-              <p className="text-warmgray-700 font-medium text-center mb-4">
-                I am a...
+          {/* Booker Message */}
+          {isBooker && (
+            <div className="space-y-4">
+              <p className="text-xl text-seed-600 leading-relaxed">
+                Thanks for joining{" "}
+                <span className="font-semibold text-pomegranate-600">UniGlow</span>! 💜
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUserType("booker");
-                    setErrors({});
-                  }}
-                  className={`type-button group ${
-                    userType === "booker" ? "selected" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl group-hover:scale-110 transition-transform">
-                      💆‍♀️
-                    </span>
-                    <div className="text-left">
-                      <p className="font-semibold text-warmgray-800">
-                        Student looking to book
-                      </p>
-                      <p className="text-sm text-warmgray-500">
-                        Find beauty services on campus
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUserType("provider");
-                    setErrors({});
-                  }}
-                  className={`type-button group ${
-                    userType === "provider" ? "selected" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl group-hover:scale-110 transition-transform">
-                      💅
-                    </span>
-                    <div className="text-left">
-                      <p className="font-semibold text-warmgray-800">
-                        Student provider
-                      </p>
-                      <p className="text-sm text-warmgray-500">
-                        Offer your beauty services
-                      </p>
-                    </div>
-                  </div>
-                </button>
+              <p className="text-seed-500 leading-relaxed">
+                We're building a community of talented student beauty providers just for you.
+                You'll be the first to know when we launch at your school!
+              </p>
+              <div className="mt-6 p-5 bg-gradient-to-br from-blush-50 to-tan-50 rounded-2xl border border-blush-200">
+                <p className="text-seed-700 text-sm font-medium">
+                  💡 Know a friend who does amazing hair, nails, or makeup? Tell them to sign up as a provider!
+                </p>
               </div>
             </div>
+          )}
 
-            {/* Dynamic Form Fields */}
-            {userType && (
-              <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
-                {/* Common Fields */}
-                <div className="space-y-4">
-                  <div>
-                    <label
-                      htmlFor="email"
-                      className="block text-sm font-medium text-warmgray-700 mb-2"
-                    >
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        if (errors.email)
-                          setErrors((prev) => ({ ...prev, email: undefined }));
-                      }}
-                      placeholder="your.email@university.edu"
-                      className={`form-input ${
-                        errors.email ? "border-coral-400" : ""
-                      }`}
-                    />
-                    {errors.email && (
-                      <p className="error-message">
-                        <svg
-                          className="w-4 h-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        {errors.email}
-                      </p>
-                    )}
-                  </div>
+          {/* Provider - Beauty School Message */}
+          {isProvider && isBeautySchool && (
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blush-100 to-tan-100 rounded-full border border-blush-200 mb-2">
+                <svg className="w-4 h-4 text-seed-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                </svg>
+                <span className="text-sm font-medium text-seed-700">Beauty School Student Provider</span>
+              </div>
+              <p className="text-xl text-seed-600 leading-relaxed">
+                Welcome to{" "}
+                <span className="font-semibold text-pomegranate-600">UniGlow</span>! 💅
+              </p>
+              <p className="text-seed-500 leading-relaxed">
+                Your beauty school journey is about to get even more exciting. Practice your skills, 
+                build your client base, and earn while you learn.
+              </p>
+              <div className="mt-6 p-5 bg-gradient-to-br from-blush-50 to-tan-50 rounded-2xl border border-blush-200 text-left">
+                <p className="font-semibold text-seed-700 mb-2">Next steps:</p>
+                <ul className="text-seed-600 text-sm space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blush-500 mt-0.5">✓</span>
+                    We'll reach out to verify your beauty school enrollment
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blush-500 mt-0.5">✓</span>
+                    Set up your profile showcasing your specialties
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blush-500 mt-0.5">✓</span>
+                    Start connecting with clients on campus!
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
 
-                  <div>
-                    <label
-                      htmlFor="school"
-                      className="block text-sm font-medium text-warmgray-700 mb-2"
-                    >
-                      School / University *
-                    </label>
-                    <input
-                      type="text"
-                      id="school"
-                      value={school}
-                      onChange={(e) => {
-                        setSchool(e.target.value);
-                        if (errors.school)
-                          setErrors((prev) => ({ ...prev, school: undefined }));
-                      }}
-                      placeholder="e.g., University of San Diego"
-                      className={`form-input ${
-                        errors.school ? "border-coral-400" : ""
-                      }`}
-                    />
-                    {errors.school && (
-                      <p className="error-message">
-                        <svg
-                          className="w-4 h-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        {errors.school}
-                      </p>
-                    )}
-                  </div>
-                </div>
+          {/* Provider - Independent Message */}
+          {isProvider && isIndependent && (
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pomegranate-100 to-blush-100 rounded-full border border-pomegranate-200 mb-2">
+                <svg className="w-4 h-4 text-pomegranate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span className="text-sm font-medium text-pomegranate-700">Independent Provider</span>
+              </div>
+              <p className="text-xl text-seed-600 leading-relaxed">
+                Welcome to{" "}
+                <span className="font-semibold text-pomegranate-600">UniGlow</span>! ✨
+              </p>
+              <p className="text-seed-500 leading-relaxed">
+                You're one step closer to growing your beauty business on campus.
+                Your skills deserve to be seen!
+              </p>
+              <div className="mt-6 p-5 bg-gradient-to-br from-pomegranate-50 to-blush-50 rounded-2xl border border-pomegranate-200 text-left">
+                <p className="font-semibold text-pomegranate-700 mb-2">Verification process:</p>
+                <ul className="text-pomegranate-600 text-sm space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-pomegranate-400 mt-0.5">1.</span>
+                    We'll review your portfolio submission
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-pomegranate-400 mt-0.5">2.</span>
+                    Complete ID verification (quick & secure)
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-pomegranate-400 mt-0.5">3.</span>
+                    Background check processing
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-pomegranate-400 mt-0.5">4.</span>
+                    Get your verified badge and start booking!
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
 
-                {/* Booker-specific fields */}
-                {userType === "booker" && (
-                  <div className="space-y-6 pt-2">
-                    {/* Services Wanted */}
-                    <div>
-                      <label className="block text-sm font-medium text-warmgray-700 mb-3">
-                        What services are you looking for? *
-                      </label>
-                      <div className="grid grid-cols-2 gap-3">
-                        {SERVICES.map((service) => (
-                          <div
-                            key={service.id}
-                            onClick={() => toggleService(service.id, "wanted")}
-                            className={`checkbox-item ${
-                              servicesWanted.includes(service.id)
-                                ? "selected"
-                                : ""
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={servicesWanted.includes(service.id)}
-                              onChange={() => {}}
-                            />
-                            <span className="checkbox-indicator">
-                              {servicesWanted.includes(service.id) && (
-                                <svg
-                                  className="w-3 h-3 text-white"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                              )}
-                            </span>
-                            <span className="text-lg">{service.emoji}</span>
-                            <span className="text-sm font-medium text-warmgray-700">
-                              {service.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      {errors.services && (
-                        <p className="error-message mt-2">
-                          <svg
-                            className="w-4 h-4"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          {errors.services}
-                        </p>
-                      )}
-                    </div>
+          {/* Generic fallback */}
+          {!isBooker && !isProvider && (
+            <div className="space-y-4">
+              <p className="text-xl text-seed-600 leading-relaxed">
+                Thanks for your interest in{" "}
+                <span className="font-semibold text-pomegranate-600">UniGlow</span>!
+              </p>
+              <p className="text-seed-500 leading-relaxed">
+                We'll be in touch soon with updates.
+              </p>
+            </div>
+          )}
+        </div>
 
-                    {/* Budget Range */}
-                    <div>
-                      <label className="block text-sm font-medium text-warmgray-700 mb-3">
-                        What's your typical budget per service? *
-                      </label>
-                      <div className="grid grid-cols-2 gap-3">
-                        {BUDGET_OPTIONS.map((option) => (
-                          <div
-                            key={option.id}
-                            onClick={() => {
-                              setBudget(option.id);
-                              if (errors.budget)
-                                setErrors((prev) => ({
-                                  ...prev,
-                                  budget: undefined,
-                                }));
-                            }}
-                            className={`radio-item ${
-                              budget === option.id ? "selected" : ""
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              name="budget"
-                              value={option.id}
-                              checked={budget === option.id}
-                              onChange={() => {}}
-                            />
-                            <span className="radio-indicator" />
-                            <span className="text-sm font-medium text-warmgray-700">
-                              {option.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      {errors.budget && (
-                        <p className="error-message mt-2">
-                          <svg
-                            className="w-4 h-4"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          {errors.budget}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Frequency */}
-                    <div>
-                      <label className="block text-sm font-medium text-warmgray-700 mb-3">
-                        How often would you book beauty services? *
-                      </label>
-                      <div className="grid grid-cols-2 gap-3">
-                        {FREQUENCY_OPTIONS.map((option) => (
-                          <div
-                            key={option.id}
-                            onClick={() => {
-                              setFrequency(option.id);
-                              if (errors.frequency)
-                                setErrors((prev) => ({
-                                  ...prev,
-                                  frequency: undefined,
-                                }));
-                            }}
-                            className={`radio-item ${
-                              frequency === option.id ? "selected" : ""
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              name="frequency"
-                              value={option.id}
-                              checked={frequency === option.id}
-                              onChange={() => {}}
-                            />
-                            <span className="radio-indicator" />
-                            <span className="text-sm font-medium text-warmgray-700">
-                              {option.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      {errors.frequency && (
-                        <p className="error-message mt-2">
-                          <svg
-                            className="w-4 h-4"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          {errors.frequency}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Timeline */}
-                    <div>
-                      <label className="block text-sm font-medium text-warmgray-700 mb-3">
-                        When do you want UniGlow on your campus? *
-                      </label>
-                      <div className="space-y-2">
-                        {TIMELINE_OPTIONS.map((option) => (
-                          <div
-                            key={option.id}
-                            onClick={() => {
-                              setTimeline(option.id);
-                              if (errors.timeline)
-                                setErrors((prev) => ({
-                                  ...prev,
-                                  timeline: undefined,
-                                }));
-                            }}
-                            className={`radio-item ${
-                              timeline === option.id ? "selected" : ""
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              name="timeline"
-                              value={option.id}
-                              checked={timeline === option.id}
-                              onChange={() => {}}
-                            />
-                            <span className="radio-indicator" />
-                            <span className="text-sm font-medium text-warmgray-700">
-                              {option.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      {errors.timeline && (
-                        <p className="error-message mt-2">
-                          <svg
-                            className="w-4 h-4"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          {errors.timeline}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Provider-specific fields */}
-                {userType === "provider" && (
-                  <div className="space-y-6 pt-2">
-                    {/* Services Offered */}
-                    <div>
-                      <label className="block text-sm font-medium text-warmgray-700 mb-3">
-                        What services do you offer? *
-                      </label>
-                      <div className="grid grid-cols-2 gap-3">
-                        {SERVICES.map((service) => (
-                          <div
-                            key={service.id}
-                            onClick={() => toggleService(service.id, "offered")}
-                            className={`checkbox-item ${
-                              servicesOffered.includes(service.id)
-                                ? "selected"
-                                : ""
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={servicesOffered.includes(service.id)}
-                              onChange={() => {}}
-                            />
-                            <span className="checkbox-indicator">
-                              {servicesOffered.includes(service.id) && (
-                                <svg
-                                  className="w-3 h-3 text-white"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                              )}
-                            </span>
-                            <span className="text-lg">{service.emoji}</span>
-                            <span className="text-sm font-medium text-warmgray-700">
-                              {service.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      {errors.services && (
-                        <p className="error-message mt-2">
-                          <svg
-                            className="w-4 h-4"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          {errors.services}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Experience Level */}
-                    <div>
-                      <label className="block text-sm font-medium text-warmgray-700 mb-3">
-                        What's your experience level? *
-                      </label>
-                      <div className="space-y-2">
-                        {EXPERIENCE_OPTIONS.map((option) => (
-                          <div
-                            key={option.id}
-                            onClick={() => {
-                              setExperience(option.id);
-                              if (errors.experience)
-                                setErrors((prev) => ({
-                                  ...prev,
-                                  experience: undefined,
-                                }));
-                            }}
-                            className={`radio-item ${
-                              experience === option.id ? "selected" : ""
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              name="experience"
-                              value={option.id}
-                              checked={experience === option.id}
-                              onChange={() => {}}
-                            />
-                            <span className="radio-indicator" />
-                            <span className="text-sm font-medium text-warmgray-700">
-                              {option.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      {errors.experience && (
-                        <p className="error-message mt-2">
-                          <svg
-                            className="w-4 h-4"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          {errors.experience}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Portfolio Link */}
-                    <div>
-                      <label
-                        htmlFor="portfolio"
-                        className="block text-sm font-medium text-warmgray-700 mb-2"
-                      >
-                        Portfolio or Instagram Link{" "}
-                        <span className="text-warmgray-400">(optional)</span>
-                      </label>
-                      <input
-                        type="url"
-                        id="portfolio"
-                        value={portfolioLink}
-                        onChange={(e) => setPortfolioLink(e.target.value)}
-                        placeholder="https://instagram.com/yourwork"
-                        className="form-input"
-                      />
-                      <p className="text-xs text-warmgray-500 mt-1.5">
-                        Share your work to get priority access
-                      </p>
-                    </div>
-
-                    {/* Availability */}
-                    <div>
-                      <label className="block text-sm font-medium text-warmgray-700 mb-3">
-                        When are you typically available? *
-                      </label>
-                      <div className="grid grid-cols-2 gap-3">
-                        {AVAILABILITY_OPTIONS.map((option) => (
-                          <div
-                            key={option.id}
-                            onClick={() => toggleAvailability(option.id)}
-                            className={`checkbox-item ${
-                              availability.includes(option.id) ? "selected" : ""
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={availability.includes(option.id)}
-                              onChange={() => {}}
-                            />
-                            <span className="checkbox-indicator">
-                              {availability.includes(option.id) && (
-                                <svg
-                                  className="w-3 h-3 text-white"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                              )}
-                            </span>
-                            <span className="text-sm font-medium text-warmgray-700">
-                              {option.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      {errors.availability && (
-                        <p className="error-message mt-2">
-                          <svg
-                            className="w-4 h-4"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          {errors.availability}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Background Check */}
-                    <div>
-                      <label className="block text-sm font-medium text-warmgray-700 mb-3">
-                        Are you willing to complete a background check? *
-                      </label>
-                      <div className="flex gap-4">
-                        {[
-                          { id: "yes", label: "Yes" },
-                          { id: "no", label: "No" },
-                          { id: "maybe", label: "Maybe" },
-                        ].map((option) => (
-                          <div
-                            key={option.id}
-                            onClick={() => {
-                              setBackgroundCheck(option.id);
-                              if (errors.backgroundCheck)
-                                setErrors((prev) => ({
-                                  ...prev,
-                                  backgroundCheck: undefined,
-                                }));
-                            }}
-                            className={`radio-item flex-1 justify-center ${
-                              backgroundCheck === option.id ? "selected" : ""
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              name="backgroundCheck"
-                              value={option.id}
-                              checked={backgroundCheck === option.id}
-                              onChange={() => {}}
-                            />
-                            <span className="radio-indicator" />
-                            <span className="text-sm font-medium text-warmgray-700">
-                              {option.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      {errors.backgroundCheck && (
-                        <p className="error-message mt-2">
-                          <svg
-                            className="w-4 h-4"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          {errors.backgroundCheck}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Start Date */}
-                    <div>
-                      <label className="block text-sm font-medium text-warmgray-700 mb-3">
-                        When can you start taking clients? *
-                      </label>
-                      <div className="space-y-2">
-                        {START_OPTIONS.map((option) => (
-                          <div
-                            key={option.id}
-                            onClick={() => {
-                              setStartDate(option.id);
-                              if (errors.startDate)
-                                setErrors((prev) => ({
-                                  ...prev,
-                                  startDate: undefined,
-                                }));
-                            }}
-                            className={`radio-item ${
-                              startDate === option.id ? "selected" : ""
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              name="startDate"
-                              value={option.id}
-                              checked={startDate === option.id}
-                              onChange={() => {}}
-                            />
-                            <span className="radio-indicator" />
-                            <span className="text-sm font-medium text-warmgray-700">
-                              {option.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      {errors.startDate && (
-                        <p className="error-message mt-2">
-                          <svg
-                            className="w-4 h-4"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          {errors.startDate}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Submit Button */}
-                <div className="pt-4">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="submit-button"
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <svg
-                          className="animate-spin w-5 h-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          />
-                        </svg>
-                        Joining...
-                      </span>
-                    ) : (
-                      <span>Join the Waitlist ✨</span>
-                    )}
-                  </button>
-                </div>
-              </form>
-            )}
+        {/* Social Share */}
+        <div className="mt-10 animate-fade-up stagger-2 opacity-0 space-y-6">
+          <p className="text-seed-500 text-sm">Spread the word!</p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="https://twitter.com/intent/tweet?text=Just%20joined%20the%20UniGlow%20waitlist%20-%20a%20student-to-student%20beauty%20platform!%20%F0%9F%92%85%E2%9C%A8%20Beauty%20by%20students%2C%20for%20students."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-seed-900 text-white rounded-xl font-medium hover:bg-seed-800 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              Share on X
+            </a>
+            <a
+              href="https://www.instagram.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 via-purple-500 to-orange-500 text-white rounded-xl font-medium hover:opacity-90 transition-opacity"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+              </svg>
+              Follow on Instagram
+            </a>
           </div>
 
-          {/* Privacy Text */}
-          <p className="text-center text-sm text-warmgray-500 mt-6 px-4">
-            By joining, you agree to receive updates about UniGlow. We respect
-            your privacy and will never share your information with third
-            parties. You can unsubscribe at any time.
-          </p>
-        </section>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-seed-500 hover:text-pomegranate-600 transition-colors font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to home
+          </Link>
+        </div>
 
         {/* Footer */}
-        <footer className="mt-16 text-center animate-fade-up stagger-3 opacity-0">
-          <p className="text-warmgray-400 text-sm">
+        <footer className="mt-16 animate-fade-up stagger-3 opacity-0">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <PomegranateLogo className="w-6 h-6" />
+            <span className="font-display text-lg font-medium text-pomegranate-600">UniGlow</span>
+          </div>
+          <p className="text-seed-400 text-sm">
             © {new Date().getFullYear()} UniGlow. Built with 💜 for students.
           </p>
         </footer>
       </div>
     </main>
+  );
+}
+
+export default function ThanksPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-cream">
+          <div className="animate-spin w-8 h-8 border-4 border-pomegranate-500 border-t-transparent rounded-full" />
+        </div>
+      }
+    >
+      <ThankYouContent />
+    </Suspense>
   );
 }
